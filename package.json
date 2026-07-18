@@ -1,0 +1,22 @@
+{
+  "name": "aero-weather",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "fast-glob": "^3.3.3",
+    "sharp": "^0.35.3",
+    "svgo": "^4.0.2",
+    "vite": "^8.1.1",
+    "vite-plugin-image-optimizer": "^2.0.3",
+    "vite-plugin-svg-icons": "^2.0.1"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1"
+  }
+}

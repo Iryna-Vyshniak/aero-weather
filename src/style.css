@@ -1,0 +1,75 @@
+:root {
+      --color-bg-base: #0F172A;
+      --color-accent: #38BDF8;
+      --color-success: #22C55E;
+      --color-warning: #F59E0B;
+      --color-error: #EF4444;
+      
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-bg-hover: rgba(255, 255, 255, 0.15);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+      
+      --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      --color-text-primary: #FFFFFF;
+      --color-text-secondary: rgba(255, 255, 255, 0.75);
+      --color-text-muted: rgba(255, 255, 255, 0.5);
+      
+      --text-xs: clamp(0.75rem, 1vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 1.5vw, 1rem);
+      --text-base: clamp(1rem, 2vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 2.5vw, 1.25rem);
+      --text-xl: clamp(1.25rem, 3vw, 1.5rem);
+      --text-2xl: clamp(1.5rem, 4vw, 2rem);
+      --text-hero: clamp(3rem, 10vw, 5rem);
+      
+      --space-2: 0.5rem;
+      --space-4: 1rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-12: 3rem;
+      
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 32px;
+      --radius-full: 9999px;
+
+      --container-max: 1200px;
+      
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+      /* Z-Index Scale */
+      --z-bg: 0;
+      --z-base: 10;
+      --z-elevated: 20;
+      --z-dropdown: 50;
+      --z-toast: 100;
+      --z-overlay: 1000;
+    }
+
+    /* ==========================================================================
+       RESET & BASE STYLES
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--color-bg-base);
+      color: var(--color-text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background var(--transition-smooth);
+      background-image: linear-gradient(180deg, #1e3a8a 0%, var(--color-bg-base) 100%);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+    }
