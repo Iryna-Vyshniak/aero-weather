@@ -1,77 +1,297 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-    <meta
-      name="theme-color"
-      content="#0F172A"
-    />
-    <meta
-      name="robots"
-      content="index, follow"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0F172A" />
     <meta
       name="description"
       content="Aero Weather provides real-time weather forecasts, interactive charts, and live radar data."
     />
     <title>Aero Weather | Live Forecast</title>
 
-    <!-- SEO Canonical & Open Graph -->
-    <link
-      rel="canonical"
-      href="https://example.com/weather"
-    />
-    <meta
-      property="og:title"
-      content="Aero Weather | Live Forecast"
-    />
+    <link rel="canonical" href="https://aero-weather-ivn.vercel.app/" />
+    <meta property="og:title" content="Aero Weather | Live Forecast" />
     <meta
       property="og:description"
       content="Premium weather application featuring real-time data, forecasts, and interactive charts."
     />
-    <meta
-      property="og:type"
-      content="website"
-    />
-    <meta
-      property="og:url"
-      content="https://example.com/weather"
-    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://aero-weather-ivn.vercel.app" />
 
-    <!-- Preconnect and Resource Hints -->
-    <link
-      rel="preconnect"
-      href="https://fonts.googleapis.com"
-    />
-    <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
-      crossorigin
-    />
-    <link
-      rel="preconnect"
-      href="https://openweathermap.org"
-      crossorigin
-    />
-    <link
-      rel="dns-prefetch"
-      href="https://openweathermap.org"
-    />
-
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://openweathermap.org" crossorigin />
+    <link rel="dns-prefetch" href="https://openweathermap.org" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
-    <main></main>
-    <script
-      type="module"
-      src="/src/main.js"
-    ></script>
+    <!-- Decorative Background -->
+    <div class="sun-flare" aria-hidden="true"></div>
+
+    <!-- Loading State -->
+    <div id="loader" class="loader-overlay" aria-hidden="false">
+      <div class="spinner" role="status" aria-label="Loading weather data"></div>
+    </div>
+
+    <main class="app-container" id="main-content">
+      <header class="app-header">
+        <h1 class="visually-hidden">Aero Weather Application</h1>
+
+        <div class="header-actions">
+          <!-- Search and Refresh Row -->
+          <div class="search-row">
+            <form id="search-form" class="search-container" action="#" role="search">
+              <label for="search-input" class="visually-hidden">Search for a city</label>
+              <input
+                type="text"
+                id="search-input"
+                class="search-input"
+                placeholder="Search for a city..."
+                role="combobox"
+                aria-expanded="false"
+                aria-controls="recent-searches"
+                aria-autocomplete="list"
+                autocomplete="off"
+              />
+              <button type="submit" class="search-btn" aria-label="Submit search">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+
+              <!-- Dropdown List added back to container -->
+              <ul
+                id="recent-searches"
+                class="recent-searches hidden"
+                role="listbox"
+                aria-label="Recent searches"
+              ></ul>
+            </form>
+
+            <div class="refresh-group">
+              <span id="refresh-status" class="refresh-status hidden" aria-live="polite"></span>
+              <button
+                type="button"
+                id="refresh-btn"
+                class="refresh-btn"
+                aria-label="Refresh weather data"
+                title="Refresh"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                  <path d="M21 3v5h-5"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Horizontal Recent Cities Badges -->
+          <nav class="recent-badges-nav" aria-label="Recently searched cities">
+            <ul id="recent-badges-list" class="recent-badges-list"></ul>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Hero Section -->
+      <section class="hero-section" aria-labelledby="current-city">
+        <h2 id="current-city" class="hero-city skeleton skeleton-city">Loading...</h2>
+
+        <div class="hero-condition">
+          <img
+            id="hero-icon"
+            class="hero-icon hidden"
+            alt=""
+            width="64"
+            height="64"
+            aria-hidden="true"
+          />
+          <div class="hero-temp">
+            <span id="current-temp" class="skeleton skeleton-temp">0</span>
+            <span class="temp-degree">°</span>
+          </div>
+        </div>
+
+        <p id="current-desc" class="hero-desc skeleton skeleton-desc">Loading...</p>
+
+        <div class="hero-highlow">
+          <span id="current-high">H: --°</span>
+          <span id="current-low">L: --°</span>
+        </div>
+
+        <div
+          id="status-badge"
+          class="status-badge"
+          role="status"
+          aria-label="Data status: Fetching"
+        >
+          <div id="status-dot" class="status-dot" aria-hidden="true"></div>
+          <span id="last-updated">Live Data</span>
+        </div>
+      </section>
+
+      <!-- Interactive Chart & Hourly Section -->
+      <section class="glass-card chart-section" aria-labelledby="forecast-heading">
+        <h3 id="forecast-heading" class="visually-hidden">Hourly Forecast</h3>
+        <nav class="forecast-tabs" aria-label="Forecast Range">
+          <button type="button" class="tab-btn active" data-range="today">Today</button>
+          <button type="button" class="tab-btn" data-range="tomorrow">Tomorrow</button>
+          <button type="button" class="tab-btn" data-range="next3">Next 3 Days</button>
+        </nav>
+
+        <div class="slider-wrapper">
+          <button
+            type="button"
+            id="slider-prev"
+            class="slider-nav-btn prev-btn"
+            aria-label="Scroll left"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+
+          <ul class="hourly-strip" id="hourly-container"></ul>
+
+          <button
+            type="button"
+            id="slider-next"
+            class="slider-nav-btn next-btn"
+            aria-label="Scroll right"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="tempChart" aria-label="Temperature trend chart" role="img"></canvas>
+        </div>
+      </section>
+
+      <!-- Metrics Grid -->
+      <section class="metrics-grid" aria-label="Current Weather Conditions Details">
+        <article class="glass-card metric-card">
+          <div class="metric-header">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+            Feels Like
+          </div>
+          <div class="metric-value"><span id="metric-feels">--</span>°</div>
+          <div class="metric-desc" id="metric-feels-desc">Similar to actual temperature.</div>
+        </article>
+
+        <article class="glass-card metric-card">
+          <div class="metric-header">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"
+              />
+            </svg>
+            Wind
+          </div>
+          <div class="metric-value"><span id="metric-wind">--</span> km/h</div>
+          <div class="metric-desc">Direction: <span id="metric-wind-dir">--</span></div>
+          <div class="compass-wrapper" aria-hidden="true">
+            <div class="compass-arrow" id="wind-compass"></div>
+          </div>
+        </article>
+
+        <article class="glass-card metric-card">
+          <div class="metric-header">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Visibility
+          </div>
+          <div class="metric-value"><span id="metric-vis">--</span> km</div>
+          <div class="metric-desc" id="metric-vis-desc">Clear view.</div>
+        </article>
+
+        <article class="glass-card metric-card">
+          <div class="metric-header">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+            </svg>
+            Humidity
+          </div>
+          <div class="metric-value"><span id="metric-hum">--</span>%</div>
+          <div class="metric-desc" id="metric-hum-desc">Fetching...</div>
+        </article>
+      </section>
+
+      <!-- 5-Day Forecast -->
+      <section class="glass-card daily-forecast-card" aria-labelledby="daily-forecast-heading">
+        <h3 id="daily-forecast-heading" class="daily-header">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          5-DAY FORECAST
+        </h3>
+        <div class="daily-list" id="daily-container"></div>
+      </section>
+    </main>
+
+    <div id="error-toast" class="error-toast" role="alert" aria-live="assertive"></div>
+    <div id="live-announcer" class="visually-hidden" aria-live="polite"></div>
+
+    <script type="module" src="/src/script/main.js"></script>
   </body>
 </html>
