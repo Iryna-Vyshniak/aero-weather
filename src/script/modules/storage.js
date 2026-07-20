@@ -1,3 +1,5 @@
+import { CONFIG } from './config.js';
+
 export const Storage = {
   getKey: (city) => `weather_cache_${city.toLowerCase()}`,
 
