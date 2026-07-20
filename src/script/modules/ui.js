@@ -110,14 +110,12 @@ export const UI = {
 
         const { scrollLeft, scrollWidth, clientWidth } = container;
 
-        // Show/hide previous button
         if (scrollLeft > 5) {
             prevBtn.classList.add('visible');
         } else {
             prevBtn.classList.remove('visible');
         }
 
-        // Show/hide next button (Math.ceil safely handles sub-pixel rounding)
         if (Math.ceil(scrollLeft) + clientWidth < scrollWidth - 5) {
             nextBtn.classList.add('visible');
         } else {
@@ -145,7 +143,7 @@ export const UI = {
 
         statusEl.innerHTML = source === 'cache'
             ? `${checkIcon} Cached data`
-            : `${checkIcon} Live data`;
+            : `${checkIcon} Refreshed data`;
 
         statusEl.classList.remove('hidden');
 
@@ -294,12 +292,17 @@ export const UI = {
         const fragment = document.createDocumentFragment();
 
         const dailyMap = new Map();
+        const tzOffset = forecast.city.timezone; // Отримуємо часовий пояс міста
+
         forecast.list.forEach(item => {
-            const date = new Date(item.dt * 1000).toLocaleDateString();
-            if (!dailyMap.has(date)) {
-                dailyMap.set(date, { min: item.main.temp_min, max: item.main.temp_max, icon: item.weather[0].icon, id: item.weather[0].id, dt: item.dt });
+            // Визначаємо точну дату в цільовому місті
+            const d = new Date((item.dt + tzOffset) * 1000);
+            const dateStr = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+
+            if (!dailyMap.has(dateStr)) {
+                dailyMap.set(dateStr, { min: item.main.temp_min, max: item.main.temp_max, icon: item.weather[0].icon, id: item.weather[0].id, dt: item.dt });
             } else {
-                const day = dailyMap.get(date);
+                const day = dailyMap.get(dateStr);
                 day.min = Math.min(day.min, item.main.temp_min);
                 day.max = Math.max(day.max, item.main.temp_max);
                 if (item.dt_txt.includes('12:00:00')) {
@@ -315,8 +318,8 @@ export const UI = {
         const range = absMax - absMin || 1;
 
         dailyArray.forEach((day, index) => {
-            const dayName = index === 0 ? 'Today' : Utils.formatDayWithMonth(day.dt);
-            const iconUrl = Utils.getIconUrl(day.icon, day.id); // Advanced UI icon
+            const dayName = index === 0 ? 'Today' : Utils.formatDayWithMonth(day.dt, tzOffset);
+            const iconUrl = Utils.getIconUrl(day.icon, day.id); 
             const leftPct = ((day.min - absMin) / range) * 100;
             const widthPct = ((day.max - day.min) / range) * 100;
 
@@ -343,20 +346,36 @@ export const UI = {
     renderChartAndHourly: (rangeType) => {
         if (!UI.currentForecastData) return;
         const list = UI.currentForecastData.list;
-        const now = new Date();
-        const todayStr = now.toLocaleDateString();
-        const tmrwDate = new Date(now);
-        tmrwDate.setDate(tmrwDate.getDate() + 1);
-        const tmrwStr = tmrwDate.toLocaleDateString();
+        const tzOffset = UI.currentForecastData.city.timezone; // Часовий пояс міста
+
+        // Функція для отримання точної дати саме в місті, яке ми шукаємо
+        const getCityDateStr = (dt) => {
+            const d = new Date((dt + tzOffset) * 1000);
+            return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+        };
+
+        // Визначаємо "Сьогодні" та "Завтра" відносно поточного світового часу + пояс міста
+        const nowUnix = Math.floor(Date.now() / 1000);
+        const cityTodayStr = getCityDateStr(nowUnix);
+        const cityTmrwStr = getCityDateStr(nowUnix + 86400);
 
         let filteredList = [];
+        
         if (rangeType === 'today') {
-            filteredList = list.filter(item => new Date(item.dt * 1000).toLocaleDateString() === todayStr);
-            if (filteredList.length < 3) filteredList = list.slice(0, 8);
+            filteredList = list.filter(item => getCityDateStr(item.dt) === cityTodayStr);
+            // Якщо пізній вечір (мало записів на сьогодні), плавно продовжуємо графік ранком завтрашнього дня
+            if (filteredList.length < 4) {
+                const tomorrowItems = list.filter(item => getCityDateStr(item.dt) === cityTmrwStr);
+                filteredList = [...filteredList, ...tomorrowItems].slice(0, 8);
+            }
         } else if (rangeType === 'tomorrow') {
-            filteredList = list.filter(item => new Date(item.dt * 1000).toLocaleDateString() === tmrwStr);
+            filteredList = list.filter(item => getCityDateStr(item.dt) === cityTmrwStr);
         } else if (rangeType === 'next3') {
-            filteredList = list.slice(8, 32).filter((_, i) => i % 2 === 0);
+            filteredList = list.filter(item => {
+                const dStr = getCityDateStr(item.dt);
+                return dStr !== cityTodayStr && dStr !== cityTmrwStr;
+            });
+            filteredList = filteredList.filter((_, i) => i % 2 === 0);
         }
 
         const strip = document.getElementById('hourly-container');
@@ -364,36 +383,34 @@ export const UI = {
         const fragment = document.createDocumentFragment();
 
         filteredList.forEach(item => {
-            const dateObj = new Date(item.dt * 1000);
-            let timeDisplay = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            // Відображаємо час в локальному поясі міста!
+            let timeDisplay = Utils.formatTime(item.dt, tzOffset);
 
-            // Inject Day and Month specifically for the Next 3 Days tab
-            if (rangeType === 'next3') {
-                const dateStr = Utils.formatDayWithMonth(item.dt).replace(',', ''); // e.g. "Fri 24 Jul"
+            // Додаємо дату (Fri 24 Jul) для Next 3 Days, АБО якщо графік "Today" зайшов за опівніч
+            if (rangeType === 'next3' || (rangeType === 'today' && getCityDateStr(item.dt) !== cityTodayStr)) {
+                const dateStr = Utils.formatDayWithMonth(item.dt, tzOffset).replace(',', ''); 
                 timeDisplay = `<span style="display:block; font-size:0.75em; opacity:0.8; margin-bottom:2px; white-space:nowrap;">${dateStr}</span>${timeDisplay}`;
             }
 
-            const iconUrl = Utils.getIconUrl(item.weather[0].icon, item.weather[0].id); // Advanced UI icon
-            const div = document.createElement('div');
-            div.className = 'hourly-item';
-            div.innerHTML = `
+            const iconUrl = Utils.getIconUrl(item.weather[0].icon, item.weather[0].id); 
+            const li = document.createElement('li');
+            li.className = 'hourly-item';
+            li.innerHTML = `
             <span class="hourly-time" style="text-align: center; line-height: 1.2;">${timeDisplay}</span>
             <img src="${iconUrl}" alt="" width="32" height="32" class="hourly-icon" loading="lazy" aria-hidden="true">
             <span class="hourly-temp">${Math.round(item.main.temp)}°</span>
           `;
-            fragment.appendChild(div);
+            fragment.appendChild(li);
         });
         strip.appendChild(fragment);
 
-        // Reset scroll position when switching tabs
         strip.scrollLeft = 0;
 
-        const labels = filteredList.map(item => new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        // Підписи для графіка Chart.js також у часовому поясі міста
+        const labels = filteredList.map(item => Utils.formatTime(item.dt, tzOffset));
         const data = filteredList.map(item => item.main.temp);
 
-        // Defer chart execution to avoid blocking main thread during UI hydration
         requestAnimationFrame(() => {
-            // Initialize slider navigation button states for the new tab length
             UI.updateSliderNavigation();
 
             setTimeout(() => {
